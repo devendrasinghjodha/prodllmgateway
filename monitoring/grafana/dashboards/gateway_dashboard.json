@@ -1,0 +1,84 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Requests Per Second (RPS)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(llm_requests_total[1m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Error Rate (%)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(llm_errors_total[1m])) / sum(rate(llm_requests_total[1m])) * 100",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Cache Hit Rate (%)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(llm_cache_hits_total[1m])) / (sum(rate(llm_cache_hits_total[1m])) + sum(rate(llm_cache_misses_total[1m]))) * 100",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "P95 Request Latency (seconds)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(llm_request_latency_seconds_bucket[1m])) by (le))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Provider Latency Comparison",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.90, sum(rate(llm_request_latency_seconds_bucket[1m])) by (le, provider))",
+          "legendFormat": "{{provider}} P90",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Token Throughput (Tokens/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(llm_tokens_total[1m])) by (type)",
+          "legendFormat": "{{type}} tokens",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "tags": ["prodllm", "ai-gateway"],
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "ProdLLM Gateway Operations Dashboard"
+}

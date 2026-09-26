@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prodllm
+  labels:
+    app.kubernetes.io/name: prodllm
+    app.kubernetes.io/part-of: prodllm-gateway

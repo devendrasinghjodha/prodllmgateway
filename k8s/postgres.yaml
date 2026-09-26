@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prodllm-postgres
+  namespace: prodllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prodllm-postgres
+  template:
+    metadata:
+      labels:
+        app: prodllm-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: prodllm
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres
+          ports:
+            - containerPort: 5432
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prodllm-postgres
+  namespace: prodllm
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: prodllm-postgres

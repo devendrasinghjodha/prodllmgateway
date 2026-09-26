@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prodllm-config
+  namespace: prodllm
+data:
+  APP_ENV: "production"
+  DEBUG: "false"
+  PORT: "8000"
+  DATABASE_URL: "postgresql+asyncpg://postgres:postgres@prodllm-postgres:5432/prodllm"
+  REDIS_URL: "redis://prodllm-redis:6379/0"
+  REDIS_ENABLED: "true"
+  CACHE_DEFAULT_TTL_SECONDS: "3600"
+  RATE_LIMIT_REQUESTS_PER_MINUTE: "120"
+  MAX_CONCURRENT_REQUESTS: "1000"
+  PRIORITY_QUEUE_CAPACITY: "2000"
+  ROUTING_STRATEGY: "auto"
+  PROMETHEUS_ENABLED: "true"
+  OTEL_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://prodllm-jaeger:4317"
+  AGNES_BASE_URL: "https://api.agnes.ai/v1"
