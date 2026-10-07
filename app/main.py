@@ -1,30 +1,31 @@
 import asyncio
-from contextlib import asynccontextmanager
 import logging
 import time
 import uuid
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.admin import admin_router
+from app.api.audio import audio_router
+from app.api.batches import batches_router
+from app.api.chat import chat_router
+from app.api.dashboard import dashboard_router
+from app.api.embeddings import embeddings_router
+from app.api.feedback import feedback_router
+from app.api.health import health_router
+from app.api.images import images_router
+from app.api.models import models_router
+from app.api.prompts import prompts_router
+from app.cache.redis import get_redis
 from app.config import settings
+from app.database.repository import init_db
 from app.observability.logging import setup_logging
 from app.observability.tracing import setup_tracing
-from app.database.repository import init_db
-from app.cache.redis import get_redis
 from app.queue.priority_queue import scheduler
 from app.routing.router import router
 from app.utils.http_client import close_http_client
-from app.api.chat import chat_router
-from app.api.models import models_router
-from app.api.health import health_router
-from app.api.admin import admin_router
-from app.api.embeddings import embeddings_router
-from app.api.images import images_router
-from app.api.audio import audio_router
-from app.api.dashboard import dashboard_router
-from app.api.prompts import prompts_router
-from app.api.feedback import feedback_router
-from app.api.batches import batches_router
 
 # Initialize Structured Logging
 setup_logging()

@@ -1,6 +1,3 @@
-import os
-from typing import Dict, List, Optional
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,15 +45,15 @@ class Settings(BaseSettings):
     PRIORITY_QUEUE_CAPACITY: int = 2000
 
     # Model Provider Credentials & Endpoints
-    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: str | None = None
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
     GEMINI_DEFAULT_MODEL: str = "gemini-1.5-flash"
 
-    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_API_KEY: str | None = None
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENROUTER_DEFAULT_MODEL: str = "meta-llama/llama-3.2-3b-instruct:free"
 
-    AGNES_API_KEY: Optional[str] = None
+    AGNES_API_KEY: str | None = None
     AGNES_BASE_URL: str = "https://api.agnes.ai/v1"
     AGNES_DEFAULT_MODEL: str = "agnes-standard"
 
@@ -65,7 +62,7 @@ class Settings(BaseSettings):
     RETRY_MAX_ATTEMPTS: int = 3
     RETRY_INITIAL_DELAY_SECONDS: float = 0.2
     RETRY_BACKOFF_FACTOR: float = 2.0
-    RETRY_STATUS_CODES: List[int] = [429, 500, 502, 503, 504]
+    RETRY_STATUS_CODES: list[int] = [429, 500, 502, 503, 504]
 
     # Circuit Breaker Settings
     CB_FAILURE_THRESHOLD: int = 5

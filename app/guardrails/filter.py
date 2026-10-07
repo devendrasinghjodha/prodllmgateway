@@ -1,6 +1,6 @@
-import re
 import logging
-from typing import List, Optional, Tuple
+import re
+
 from app.providers.base import ChatMessage
 
 logger = logging.getLogger("prodllm.guardrails")
@@ -19,11 +19,11 @@ class ContentGuardrail:
     Guardrail checking prompt safety, blocked words, and injection attempts.
     """
 
-    def __init__(self, blocked_patterns: Optional[List[str]] = None):
+    def __init__(self, blocked_patterns: list[str] | None = None):
         patterns = blocked_patterns or DEFAULT_BLOCKED_PATTERNS
         self._regexes = [re.compile(p, re.IGNORECASE) for p in patterns]
 
-    def validate_messages(self, messages: List[ChatMessage]) -> Tuple[bool, Optional[str]]:
+    def validate_messages(self, messages: list[ChatMessage]) -> tuple[bool, str | None]:
         """
         Scan messages for violations.
         Returns: (is_safe, error_message)

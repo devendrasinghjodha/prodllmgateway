@@ -2,38 +2,37 @@ import json
 import logging
 import time
 import uuid
-from typing import Optional
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, BackgroundTasks
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.auth.api_keys import AuthenticatedUser
 from app.auth.middleware import get_current_user
-from app.database.repository import get_db_session, DatabaseRepository
-from app.providers.base import ChatRequest, ChatResponse, ChatStreamChunk
-from app.cache.redis import get_redis, generate_cache_key, CacheManager
+from app.cache.redis import CacheManager, generate_cache_key, get_redis
 from app.cache.singleflight import SingleFlight
-from app.limits.rate_limit import RateLimiter
+from app.config import settings
+from app.database.repository import DatabaseRepository, get_db_session
 from app.limits.quota import QuotaManager
-from app.queue.priority_queue import scheduler, BackpressureQueueFullError
-from app.routing.router import router
-from app.routing.scoring import scorer
-from app.reliability.fallback import FallbackOrchestrator, AllProvidersFailedError
-from app.reliability.hedging import HedgingOrchestrator
-from app.reliability.circuit_breaker import LLM_CIRCUIT_BREAKER_OPEN_TOTAL
+from app.limits.rate_limit import RateLimiter
 from app.observability.metrics import (
-    LLM_REQUESTS_TOTAL,
-    LLM_REQUEST_LATENCY_SECONDS,
-    LLM_TOKENS_TOTAL,
-    LLM_ERRORS_TOTAL,
     LLM_CACHE_HITS_TOTAL,
     LLM_CACHE_MISSES_TOTAL,
-    LLM_RATE_LIMIT_TOTAL,
+    LLM_ERRORS_TOTAL,
     LLM_FALLBACK_TOTAL,
     LLM_IN_FLIGHT_REQUESTS,
+    LLM_RATE_LIMIT_TOTAL,
+    LLM_REQUEST_LATENCY_SECONDS,
+    LLM_REQUESTS_TOTAL,
+    LLM_TOKENS_TOTAL,
 )
 from app.observability.tracing import get_tracer
+from app.providers.base import ChatRequest, ChatResponse
+from app.queue.priority_queue import BackpressureQueueFullError, scheduler
+from app.reliability.fallback import AllProvidersFailedError, FallbackOrchestrator
+from app.reliability.hedging import HedgingOrchestrator
+from app.routing.router import router
+from app.routing.scoring import scorer
 
 logger = logging.getLogger("prodllm.api.chat")
 chat_router = APIRouter(prefix="/v1", tags=["Chat Completions"])
@@ -41,8 +40,8 @@ chat_router = APIRouter(prefix="/v1", tags=["Chat Completions"])
 
 async def log_request_audit(
     request_id: str,
-    user_id: Optional[str],
-    api_key_id: Optional[str],
+    user_id: str | None,
+    api_key_id: str | None,
     provider: str,
     model: str,
     prompt_tokens: int,
@@ -50,9 +49,9 @@ async def log_request_audit(
     total_tokens: int,
     latency_ms: float,
     status: str,
-    error_type: Optional[str],
+    error_type: str | None,
     estimated_cost: float,
-    idempotency_key: Optional[str],
+    idempotency_key: str | None,
 ):
     try:
         from app.database.repository import async_session_factory
@@ -84,10 +83,10 @@ async def create_chat_completion(
     request: Request,
     body: ChatRequest,
     background_tasks: BackgroundTasks,
-    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
-    x_priority: Optional[str] = Header(None, alias="X-Priority"),
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+    x_priority: str | None = Header(None, alias="X-Priority"),
     user: AuthenticatedUser = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session),
+    db: AsyncSession | None = Depends(get_db_session),
 ):
     """
     OpenAI-compatible Chat Completion endpoint with multi-provider routing,
@@ -125,10 +124,10 @@ async def create_chat_completion(
                 )
 
             # 2. PII Masking & Context Pruning
-            from app.guardrails.pii import pii_masker
-            from app.utils.compression import prune_chat_context
             from app.cache.semantic import semantic_cache
+            from app.guardrails.pii import pii_masker
             from app.routing.shadow import shadow_orchestrator
+            from app.utils.compression import prune_chat_context
 
             masked_messages, pii_mapping = pii_masker.mask_messages(body.messages)
             effective_messages = prune_chat_context(masked_messages)
@@ -211,7 +210,7 @@ async def create_chat_completion(
                         logger.info(f"Exact Cache HIT for key: {cache_key[:16]}... ({latency_ms:.2f}ms)")
                         if pii_mapping:
                             for c in cached_resp.choices:
-                                c.message.content = pii_masker.unmask_text(c.message.content, pii_mapping)
+                                c.message.content = pii_masker.unmask_text(c.message.content or "", pii_mapping)
                         return cached_resp
 
                     # Semantic Vector Match
@@ -224,7 +223,7 @@ async def create_chat_completion(
                         logger.info(f"Semantic Cache HIT (score: {score:.2f}) in {latency_ms:.2f}ms")
                         if pii_mapping:
                             for c in sem_resp.choices:
-                                c.message.content = pii_masker.unmask_text(c.message.content, pii_mapping)
+                                c.message.content = pii_masker.unmask_text(c.message.content or "", pii_mapping)
                         return sem_resp
 
                 LLM_CACHE_MISSES_TOTAL.inc()
@@ -306,7 +305,7 @@ async def create_chat_completion(
             # Unmask PII in final response
             if pii_mapping:
                 for choice in response.choices:
-                    choice.message.content = pii_masker.unmask_text(choice.message.content, pii_mapping)
+                    choice.message.content = pii_masker.unmask_text(choice.message.content or "", pii_mapping)
 
             # 8. Post-Execution Metrics & Quota Consumption
             latency_ms = (time.time() - start_time) * 1000

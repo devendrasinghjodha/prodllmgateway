@@ -1,17 +1,17 @@
 import logging
-from typing import List
+
 from app.providers.base import ChatMessage
-from app.utils.tokens import count_tokens, count_messages_tokens
+from app.utils.tokens import count_messages_tokens, count_tokens
 
 logger = logging.getLogger("prodllm.compression")
 
 
 def prune_chat_context(
-    messages: List[ChatMessage],
+    messages: list[ChatMessage],
     max_context_tokens: int = 4000,
     keep_system_messages: bool = True,
     recent_messages_to_keep: int = 4,
-) -> List[ChatMessage]:
+) -> list[ChatMessage]:
     """
     Intelligently prune chat conversation context to fit within token limits and reduce API cost:
     1. Always preserves system prompt instructions.

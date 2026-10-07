@@ -1,12 +1,12 @@
 import time
-from typing import Dict
+
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.routing.router import router
+from app.database.repository import DatabaseRepository, get_db_session
+from app.observability.metrics import CONTENT_TYPE_LATEST, get_metrics_payload
 from app.reliability.circuit_breaker import circuit_breakers
-from app.database.repository import get_db_session, DatabaseRepository
-from app.observability.metrics import get_metrics_payload, CONTENT_TYPE_LATEST
+from app.routing.router import router
 
 health_router = APIRouter(tags=["Health & Telemetry"])
 

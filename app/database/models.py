@@ -1,16 +1,12 @@
-import time
 from datetime import datetime
-from typing import Optional
+
 from sqlalchemy import (
     Column,
-    String,
-    Integer,
-    Float,
     DateTime,
+    Float,
     ForeignKey,
-    Boolean,
-    Text,
-    func,
+    Integer,
+    String,
 )
 from sqlalchemy.orm import declarative_base, relationship
 

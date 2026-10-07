@@ -18,7 +18,7 @@ def test_context_length_routing():
     assert ordered_short[0].name == "agnes"
 
     # Extremely long prompt (> 8000 tokens)
-    long_content = "This is an extensive document paragraph. " * 1000
+    long_content = "This is an extensive document paragraph. " * 1300
     long_req = ChatRequest(
         model="auto",
         messages=[ChatMessage(role="user", content=long_content)],

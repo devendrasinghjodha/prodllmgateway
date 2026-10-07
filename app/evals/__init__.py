@@ -1,3 +1,3 @@
-from app.evals.heuristics import HeuristicEvaluator, EvalResult, ComprehensiveEvalReport
+from app.evals.heuristics import ComprehensiveEvalReport, EvalResult, HeuristicEvaluator
 
-__all__ = ["HeuristicEvaluator", "EvalResult", "ComprehensiveEvalReport"]
+__all__ = ["ComprehensiveEvalReport", "EvalResult", "HeuristicEvaluator"]

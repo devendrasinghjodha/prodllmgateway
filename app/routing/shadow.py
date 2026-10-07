@@ -2,7 +2,7 @@ import asyncio
 import logging
 import random
 import time
-from typing import Optional
+
 from app.providers.base import ChatRequest, LLMProvider
 
 logger = logging.getLogger("prodllm.shadow")
@@ -19,7 +19,7 @@ class ShadowTrafficOrchestrator:
 
     async def maybe_shadow_request(
         self,
-        shadow_provider: Optional[LLMProvider],
+        shadow_provider: LLMProvider | None,
         request: ChatRequest,
         primary_response_id: str,
     ):

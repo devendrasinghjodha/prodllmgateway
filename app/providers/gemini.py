@@ -1,24 +1,23 @@
 import json
 import time
 import uuid
-from typing import AsyncGenerator, Dict, List, Optional
-import httpx
+from collections.abc import AsyncGenerator
 
 from app.config import settings
-from app.utils.http_client import get_http_client
 from app.providers.base import (
+    ChatChoice,
+    ChatChoiceMessage,
     ChatMessage,
     ChatRequest,
     ChatResponse,
-    ChatChoice,
-    ChatChoiceMessage,
     ChatStreamChunk,
     DeltaMessage,
-    StreamChoice,
     LLMProvider,
     ProviderHealth,
+    StreamChoice,
     Usage,
 )
+from app.utils.http_client import get_http_client
 
 
 class GeminiProvider(LLMProvider):
@@ -26,9 +25,9 @@ class GeminiProvider(LLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
-        default_model: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        default_model: str | None = None,
         timeout: float = 30.0,
     ):
         self.api_key = api_key or settings.GEMINI_API_KEY
@@ -43,7 +42,7 @@ class GeminiProvider(LLMProvider):
             return request_model
         return self.default_model
 
-    def _convert_messages(self, messages: List[ChatMessage]) -> tuple[Optional[str], List[Dict]]:
+    def _convert_messages(self, messages: list[ChatMessage]) -> tuple[str | None, list[dict]]:
         system_instruction = None
         contents = []
 
@@ -59,9 +58,9 @@ class GeminiProvider(LLMProvider):
 
         return system_instruction, contents
 
-    def _build_payload(self, request: ChatRequest) -> Dict:
+    def _build_payload(self, request: ChatRequest) -> dict:
         system_instruction, contents = self._convert_messages(request.messages)
-        payload: Dict = {
+        payload: dict = {
             "contents": contents,
             "generationConfig": {}
         }

@@ -1,43 +1,44 @@
-from typing import Dict, Any, List, Optional
 import datetime
 import uuid
-from fastapi import APIRouter, HTTPException, Depends, Query
+from typing import Any
+
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
-from app.auth.middleware import get_authenticated_key
 from app.auth.api_keys import APIKey
-from app.evals.heuristics import HeuristicEvaluator, ComprehensiveEvalReport
+from app.auth.middleware import get_authenticated_key
+from app.evals.heuristics import ComprehensiveEvalReport, HeuristicEvaluator
 
 feedback_router = APIRouter(prefix="/v1", tags=["Feedback & Evals"])
 
 
 class FeedbackSubmission(BaseModel):
-    request_id: Optional[str] = None
-    model: Optional[str] = None
+    request_id: str | None = None
+    model: str | None = None
     rating: int = Field(..., ge=1, le=5, description="1 (poor) to 5 (excellent)")
-    thumb: Optional[str] = Field(None, description="'up' or 'down'")
-    comment: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    thumb: str | None = Field(None, description="'up' or 'down'")
+    comment: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class FeedbackRecord(FeedbackSubmission):
     id: str
-    team_id: Optional[str] = None
+    team_id: str | None = None
     created_at: str
 
 
 class RunEvalRequest(BaseModel):
     text: str
     expect_json: bool = False
-    required_json_keys: Optional[List[str]] = None
-    ground_truth_keywords: Optional[List[str]] = None
+    required_json_keys: list[str] | None = None
+    ground_truth_keywords: list[str] | None = None
     min_chars: int = 1
     max_chars: int = 50000
 
 
 # In-Memory Feedback Store (Persisted to DB in production setup)
-_FEEDBACK_STORE: List[FeedbackRecord] = []
+_FEEDBACK_STORE: list[FeedbackRecord] = []
 
 
 @feedback_router.post("/feedback", response_model=FeedbackRecord)
@@ -56,11 +57,11 @@ async def submit_feedback(
     return record
 
 
-@feedback_router.get("/feedback", response_model=List[FeedbackRecord])
+@feedback_router.get("/feedback", response_model=list[FeedbackRecord])
 async def list_feedback(
-    team_id: Optional[str] = None,
-    model: Optional[str] = None,
-    min_rating: Optional[int] = Query(None, ge=1, le=5),
+    team_id: str | None = None,
+    model: str | None = None,
+    min_rating: int | None = Query(None, ge=1, le=5),
     limit: int = 50,
     api_key: APIKey = Depends(get_authenticated_key),
 ):

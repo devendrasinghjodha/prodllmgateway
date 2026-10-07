@@ -20,9 +20,9 @@
 
 ## 📖 Overview
 
-**ProdLLM Gateway** is a production-grade, zero-budget AI routing and governance engine written in Python (FastAPI). It sits between your client applications (OpenAI SDK, LangChain, LlamaIndex, curl) and upstream LLM providers (Google Gemini, OpenRouter, Agnes AI), delivering:
+**ProdLLM Gateway** is a production-oriented, zero-budget AI routing and governance engine written in Python (FastAPI). It sits between your client applications (OpenAI SDK, LangChain, LlamaIndex, curl) and upstream LLM providers (Google Gemini, OpenRouter, Agnes AI), delivering:
 
-- **99.5% Latency & Cost Reduction** via Exact SHA-256 and Semantic Vector Caching.
+- **Latency and cost controls** via exact SHA-256 and semantic vector caching.
 - **Resilient Multi-Provider Fallbacks** with per-provider Circuit Breakers, Jittered Retries, and Request Hedging.
 - **Enterprise Multi-Tenancy & Financial Governance** with monthly USD spend limits, sliding-window rate limits, and graceful $0 free-tier downgrades.
 - **Real-Time Guardrails & PII Masking** redacting sensitive customer data before sending it upstream.

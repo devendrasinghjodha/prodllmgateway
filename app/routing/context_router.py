@@ -1,6 +1,6 @@
 import logging
-from typing import List, Optional
-from app.providers.base import LLMProvider, ChatRequest
+
+from app.providers.base import ChatRequest, LLMProvider
 from app.routing.policies import RoutingPolicy
 from app.utils.tokens import count_messages_tokens
 
@@ -18,9 +18,9 @@ class ContextLengthPolicy(RoutingPolicy):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         token_count = count_messages_tokens(request.messages)
         provider_map = {p.name.lower(): p for p in available_providers}
 

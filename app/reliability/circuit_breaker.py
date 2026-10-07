@@ -1,8 +1,8 @@
 import asyncio
-from enum import Enum
 import logging
 import time
-from typing import Callable, Dict, Optional
+from collections.abc import Callable
+from enum import Enum
 
 from app.config import settings
 
@@ -36,10 +36,10 @@ class CircuitBreaker:
     def __init__(
         self,
         name: str,
-        failure_threshold: Optional[int] = None,
-        recovery_time_seconds: Optional[float] = None,
-        half_open_probes: Optional[int] = None,
-        on_state_change: Optional[Callable[[str, CircuitState, CircuitState], None]] = None,
+        failure_threshold: int | None = None,
+        recovery_time_seconds: float | None = None,
+        half_open_probes: int | None = None,
+        on_state_change: Callable[[str, CircuitState, CircuitState], None] | None = None,
     ):
         self.name = name
         self.failure_threshold = failure_threshold or settings.CB_FAILURE_THRESHOLD
@@ -81,7 +81,7 @@ class CircuitBreaker:
             elif self.state == CircuitState.CLOSED:
                 self.failure_count = 0
 
-    async def record_failure(self, exc: Optional[Exception] = None):
+    async def record_failure(self, exc: Exception | None = None):
         """Record upstream failure."""
         async with self._lock:
             if self.state == CircuitState.HALF_OPEN:
@@ -119,7 +119,7 @@ class CircuitBreaker:
 class CircuitBreakerRegistry:
     """Registry maintaining one circuit breaker per provider."""
     def __init__(self):
-        self._breakers: Dict[str, CircuitBreaker] = {}
+        self._breakers: dict[str, CircuitBreaker] = {}
         self._lock = asyncio.Lock()
 
     def get_breaker(self, name: str) -> CircuitBreaker:
@@ -127,7 +127,7 @@ class CircuitBreakerRegistry:
             self._breakers[name] = CircuitBreaker(name=name)
         return self._breakers[name]
 
-    def all_states(self) -> Dict[str, str]:
+    def all_states(self) -> dict[str, str]:
         return {name: cb.state.value for name, cb in self._breakers.items()}
 
 

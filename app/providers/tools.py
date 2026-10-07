@@ -1,7 +1,8 @@
 import json
-import uuid
 import logging
-from typing import Any, Dict, List, Optional
+import uuid
+from typing import Any
+
 from pydantic import BaseModel
 
 logger = logging.getLogger("prodllm.tools")
@@ -25,7 +26,7 @@ class ToolAdapter:
     """
 
     @staticmethod
-    def openai_to_gemini_tools(tools: Optional[List[Dict[str, Any]]]) -> Optional[List[Dict[str, Any]]]:
+    def openai_to_gemini_tools(tools: list[dict[str, Any]] | None) -> list[dict[str, Any]] | None:
         """
         Translates OpenAI tools list to Gemini functionDeclarations format.
         """
@@ -52,7 +53,7 @@ class ToolAdapter:
         return [{"functionDeclarations": function_declarations}]
 
     @staticmethod
-    def gemini_response_to_openai_tool_calls(candidate: Dict[str, Any]) -> Optional[List[ToolCall]]:
+    def gemini_response_to_openai_tool_calls(candidate: dict[str, Any]) -> list[ToolCall] | None:
         """
         Translates Gemini candidates functionCall part into OpenAI standard tool_calls.
         """

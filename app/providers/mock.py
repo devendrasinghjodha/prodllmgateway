@@ -1,18 +1,18 @@
 import asyncio
 import time
 import uuid
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from app.providers.base import (
-    ChatRequest,
-    ChatResponse,
     ChatChoice,
     ChatChoiceMessage,
+    ChatRequest,
+    ChatResponse,
     ChatStreamChunk,
     DeltaMessage,
-    StreamChoice,
     LLMProvider,
     ProviderHealth,
+    StreamChoice,
     Usage,
 )
 

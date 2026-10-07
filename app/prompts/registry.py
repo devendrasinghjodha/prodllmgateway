@@ -1,6 +1,7 @@
-from typing import Dict, Any, List, Optional
-import re
 import datetime
+import re
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -8,12 +9,12 @@ class PromptTemplate(BaseModel):
     name: str
     version: int = 1
     template: str
-    description: Optional[str] = None
-    input_variables: List[str] = Field(default_factory=list)
-    tags: List[str] = Field(default_factory=list)
+    description: str | None = None
+    input_variables: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
     created_at: str = Field(default_factory=lambda: datetime.datetime.utcnow().isoformat())
-    model_override: Optional[str] = None
-    temperature_override: Optional[float] = None
+    model_override: str | None = None
+    temperature_override: float | None = None
 
 
 class PromptRegistry:
@@ -23,10 +24,10 @@ class PromptRegistry:
     """
     def __init__(self):
         # Key: name -> List of PromptTemplate sorted by version ascending
-        self._prompts: Dict[str, List[PromptTemplate]] = {}
+        self._prompts: dict[str, list[PromptTemplate]] = {}
         self._seed_default_prompts()
 
-    def _extract_variables(self, template: str) -> List[str]:
+    def _extract_variables(self, template: str) -> list[str]:
         """Extracts {variable_name} or {{variable_name}} tokens from template."""
         # Find single or double brace variables
         matches = re.findall(r"\{+([a-zA-Z_][a-zA-Z0-9_]*)\}+", template)
@@ -57,10 +58,10 @@ class PromptRegistry:
         self,
         name: str,
         template: str,
-        description: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        model_override: Optional[str] = None,
-        temperature_override: Optional[float] = None,
+        description: str | None = None,
+        tags: list[str] | None = None,
+        model_override: str | None = None,
+        temperature_override: float | None = None,
     ) -> PromptTemplate:
         """
         Registers a new prompt or increments version if prompt with same name exists.
@@ -85,7 +86,7 @@ class PromptRegistry:
         self._prompts[name].append(prompt_obj)
         return prompt_obj
 
-    def get_prompt(self, name: str, version: Optional[int] = None) -> Optional[PromptTemplate]:
+    def get_prompt(self, name: str, version: int | None = None) -> PromptTemplate | None:
         """
         Retrieves a prompt by name. If version is None, returns latest version.
         """
@@ -99,7 +100,7 @@ class PromptRegistry:
                 return p
         return None
 
-    def list_prompts(self, tag: Optional[str] = None) -> List[PromptTemplate]:
+    def list_prompts(self, tag: str | None = None) -> list[PromptTemplate]:
         """
         Lists the latest versions of all registered prompts, optionally filtered by tag.
         """
@@ -110,11 +111,11 @@ class PromptRegistry:
                 result.append(latest)
         return result
 
-    def get_prompt_history(self, name: str) -> List[PromptTemplate]:
+    def get_prompt_history(self, name: str) -> list[PromptTemplate]:
         """Returns all versions for a prompt name."""
         return self._prompts.get(name, [])
 
-    def render(self, name: str, variables: Dict[str, Any], version: Optional[int] = None) -> str:
+    def render(self, name: str, variables: dict[str, Any], version: int | None = None) -> str:
         """
         Renders a prompt template with provided variables.
         """

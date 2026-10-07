@@ -1,18 +1,19 @@
 import asyncio
 import logging
 import time
-from typing import Callable, Awaitable, Dict, Optional
+from collections.abc import Awaitable, Callable
+
 import redis.asyncio as redis
 
+from app.cache.redis import CacheManager
 from app.config import settings
 from app.providers.base import ChatResponse
-from app.cache.redis import CacheManager
 
 logger = logging.getLogger("prodllm.singleflight")
 
 # Local in-memory single-flight tracker
-_local_flights: Dict[str, asyncio.Event] = {}
-_local_results: Dict[str, ChatResponse] = {}
+_local_flights: dict[str, asyncio.Event] = {}
+_local_results: dict[str, ChatResponse] = {}
 _flight_lock = asyncio.Lock()
 
 
@@ -22,7 +23,7 @@ class SingleFlight:
     Uses distributed Redis SETNX locks or in-memory asyncio Events.
     """
 
-    def __init__(self, cache_manager: CacheManager, r_client: Optional[redis.Redis] = None):
+    def __init__(self, cache_manager: CacheManager, r_client: redis.Redis | None = None):
         self.cache_manager = cache_manager
         self.r = r_client
 
@@ -102,7 +103,7 @@ class SingleFlight:
                 cached = await self.cache_manager.get_cached_response(cache_key)
                 if cached:
                     return cached, True
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
             return await fn(), False
 

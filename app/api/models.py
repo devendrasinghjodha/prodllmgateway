@@ -1,5 +1,5 @@
 import time
-from typing import List
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -15,7 +15,7 @@ class ModelCard(BaseModel):
 
 class ModelListResponse(BaseModel):
     object: str = "list"
-    data: List[ModelCard]
+    data: list[ModelCard]
 
 
 SUPPORTED_MODELS = [

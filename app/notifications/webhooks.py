@@ -1,13 +1,11 @@
 import asyncio
-import json
 import logging
 import time
 from enum import Enum
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
-import httpx
+from typing import Any
 
-from app.config import settings
+from pydantic import BaseModel, Field
+
 from app.utils.http_client import get_http_client
 
 logger = logging.getLogger("prodllm.webhooks")
@@ -31,7 +29,7 @@ class WebhookEvent(BaseModel):
     severity: str = "warning"  # info, warning, error, critical
     title: str
     message: str
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class WebhookChannel(BaseModel):
@@ -40,8 +38,8 @@ class WebhookChannel(BaseModel):
     channel_type: str = "generic"  # generic, slack, discord, pagerduty
     url: str
     enabled: bool = True
-    secret_token: Optional[str] = None
-    subscribed_events: List[EventType] = Field(default_factory=lambda: list(EventType))
+    secret_token: str | None = None
+    subscribed_events: list[EventType] = Field(default_factory=lambda: list(EventType))
 
 
 class NotificationDispatcher:
@@ -54,13 +52,13 @@ class NotificationDispatcher:
     """
 
     def __init__(self):
-        self._channels: Dict[str, WebhookChannel] = {}
+        self._channels: dict[str, WebhookChannel] = {}
 
     def register_channel(self, channel: WebhookChannel):
         self._channels[channel.id] = channel
         logger.info(f"Registered webhook channel '{channel.name}' ({channel.channel_type}) -> {channel.url[:25]}...")
 
-    def get_channels(self) -> List[WebhookChannel]:
+    def get_channels(self) -> list[WebhookChannel]:
         return list(self._channels.values())
 
     def remove_channel(self, channel_id: str) -> bool:
@@ -99,7 +97,7 @@ class NotificationDispatcher:
             except Exception as e:
                 logger.error(f"Failed to dispatch webhook event {event.event_id} to {ch.name}: {e}")
 
-    def _format_slack_payload(self, event: WebhookEvent) -> Dict:
+    def _format_slack_payload(self, event: WebhookEvent) -> dict:
         color_map = {"info": "#3b82f6", "warning": "#f59e0b", "error": "#ef4444", "critical": "#7f1d1d"}
         return {
             "attachments": [
@@ -114,7 +112,7 @@ class NotificationDispatcher:
             ]
         }
 
-    def _format_discord_payload(self, event: WebhookEvent) -> Dict:
+    def _format_discord_payload(self, event: WebhookEvent) -> dict:
         color_map = {"info": 3900150, "warning": 16098827, "error": 15680580, "critical": 8330781}
         return {
             "embeds": [

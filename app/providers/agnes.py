@@ -1,23 +1,22 @@
 import json
 import time
 import uuid
-from typing import AsyncGenerator, Dict, List, Optional
-import httpx
+from collections.abc import AsyncGenerator
 
 from app.config import settings
-from app.utils.http_client import get_http_client
 from app.providers.base import (
-    ChatRequest,
-    ChatResponse,
     ChatChoice,
     ChatChoiceMessage,
+    ChatRequest,
+    ChatResponse,
     ChatStreamChunk,
     DeltaMessage,
-    StreamChoice,
     LLMProvider,
     ProviderHealth,
+    StreamChoice,
     Usage,
 )
+from app.utils.http_client import get_http_client
 
 
 class AgnesProvider(LLMProvider):
@@ -25,9 +24,9 @@ class AgnesProvider(LLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
-        default_model: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        default_model: str | None = None,
         timeout: float = 30.0,
     ):
         self.api_key = api_key or settings.AGNES_API_KEY
@@ -42,7 +41,7 @@ class AgnesProvider(LLMProvider):
             return request_model
         return self.default_model
 
-    def _build_payload(self, request: ChatRequest, stream: bool = False) -> Dict:
+    def _build_payload(self, request: ChatRequest, stream: bool = False) -> dict:
         model = self._resolve_model(request.model)
         payload = {
             "model": model,
@@ -61,7 +60,7 @@ class AgnesProvider(LLMProvider):
 
         return payload
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         headers = {
             "Content-Type": "application/json",
             "User-Agent": "ProdLLM-Gateway/1.0",

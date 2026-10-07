@@ -1,10 +1,10 @@
 import logging
-from typing import Optional
+
 import httpx
 
 logger = logging.getLogger("prodllm.http")
 
-_client: Optional[httpx.AsyncClient] = None
+_client: httpx.AsyncClient | None = None
 
 
 def get_http_client() -> httpx.AsyncClient:

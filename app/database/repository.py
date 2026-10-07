@@ -1,32 +1,37 @@
 import logging
-from typing import AsyncGenerator, List, Optional
+from collections.abc import AsyncGenerator
 from datetime import datetime
+
+from sqlalchemy import func, select
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy import select, func, desc
 
 from app.config import settings
-from app.database.models import Base, User, APIKey, RequestLog
+from app.database.models import APIKey, Base, RequestLog, User
 
 logger = logging.getLogger("prodllm.database")
 
-engine: Optional[AsyncEngine] = None
-async_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
+engine: AsyncEngine | None = None
+async_session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
 async def init_db() -> AsyncEngine:
     global engine, async_session_factory
     try:
-        engine = create_async_engine(
-            settings.DATABASE_URL,
-            echo=settings.DEBUG,
-            pool_size=settings.DB_POOL_SIZE,
-            max_overflow=settings.DB_MAX_OVERFLOW,
-        )
+        engine_options = {"echo": settings.DEBUG}
+        if settings.APP_ENV == "test":
+            engine_options["poolclass"] = NullPool
+        else:
+            engine_options.update(
+                pool_size=settings.DB_POOL_SIZE,
+                max_overflow=settings.DB_MAX_OVERFLOW,
+            )
+        engine = create_async_engine(settings.DATABASE_URL, **engine_options)
         async_session_factory = async_sessionmaker(
             engine, expire_on_commit=False, class_=AsyncSession
         )
@@ -71,7 +76,7 @@ class DatabaseRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_user(self, user_id: str) -> Optional[User]:
+    async def get_user(self, user_id: str) -> User | None:
         stmt = select(User).where(User.id == user_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -82,7 +87,7 @@ class DatabaseRepository:
         await self.session.flush()
         return user
 
-    async def get_api_key_by_hash(self, key_hash: str) -> Optional[APIKey]:
+    async def get_api_key_by_hash(self, key_hash: str) -> APIKey | None:
         stmt = select(APIKey).where(
             APIKey.key_hash == key_hash,
             APIKey.status == "active"
@@ -96,7 +101,7 @@ class DatabaseRepository:
         user_id: str,
         key_hash: str,
         prefix: str,
-        expires_at: Optional[datetime] = None,
+        expires_at: datetime | None = None,
     ) -> APIKey:
         api_key = APIKey(
             id=key_id,
@@ -114,8 +119,8 @@ class DatabaseRepository:
     async def log_request(
         self,
         request_id: str,
-        user_id: Optional[str],
-        api_key_id: Optional[str],
+        user_id: str | None,
+        api_key_id: str | None,
         provider: str,
         model: str,
         prompt_tokens: int,
@@ -123,9 +128,9 @@ class DatabaseRepository:
         total_tokens: int,
         latency_ms: float,
         status: str = "success",
-        error_type: Optional[str] = None,
+        error_type: str | None = None,
         estimated_cost: float = 0.0,
-        idempotency_key: Optional[str] = None,
+        idempotency_key: str | None = None,
     ) -> RequestLog:
         req_log = RequestLog(
             id=request_id,
@@ -147,7 +152,7 @@ class DatabaseRepository:
         await self.session.flush()
         return req_log
 
-    async def get_usage_summary(self, user_id: Optional[str] = None) -> dict:
+    async def get_usage_summary(self, user_id: str | None = None) -> dict:
         stmt = select(
             func.count(RequestLog.id).label("total_requests"),
             func.sum(RequestLog.prompt_tokens).label("total_prompt_tokens"),

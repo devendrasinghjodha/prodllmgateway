@@ -1,13 +1,13 @@
+import logging
 import math
 import time
-import logging
-from typing import Dict, List, Optional, Tuple
+
 from app.providers.base import ChatResponse
 
 logger = logging.getLogger("prodllm.semantic_cache")
 
 
-def simple_embedding(text: str, dim: int = 128) -> List[float]:
+def simple_embedding(text: str, dim: int = 128) -> list[float]:
     """
     Fast, zero-dependency character-trigram bag-of-words embedding vector generator.
     Produces a normalized float vector for semantic similarity matching without heavy dependencies.
@@ -33,7 +33,7 @@ def simple_embedding(text: str, dim: int = 128) -> List[float]:
     return vector
 
 
-def cosine_similarity(v1: List[float], v2: List[float]) -> float:
+def cosine_similarity(v1: list[float], v2: list[float]) -> float:
     """Compute cosine similarity between two unit vectors."""
     if len(v1) != len(v2):
         return 0.0
@@ -41,7 +41,7 @@ def cosine_similarity(v1: List[float], v2: List[float]) -> float:
 
 
 class SemanticCacheEntry:
-    def __init__(self, prompt: str, embedding: List[float], response: ChatResponse, ttl_seconds: int = 3600):
+    def __init__(self, prompt: str, embedding: list[float], response: ChatResponse, ttl_seconds: int = 3600):
         self.prompt = prompt
         self.embedding = embedding
         self.response = response
@@ -58,7 +58,7 @@ class SemanticCache:
     def __init__(self, similarity_threshold: float = 0.88, max_entries: int = 1000):
         self.similarity_threshold = similarity_threshold
         self.max_entries = max_entries
-        self._entries: Dict[str, SemanticCacheEntry] = {}
+        self._entries: dict[str, SemanticCacheEntry] = {}
 
     def get_query_text(self, messages: list) -> str:
         # Extract last user message
@@ -67,7 +67,7 @@ class SemanticCache:
                 return getattr(m, "content", "") if hasattr(m, "content") else m.get("content", "")
         return ""
 
-    async def search(self, messages: list, model: str) -> Optional[Tuple[ChatResponse, float]]:
+    async def search(self, messages: list, model: str) -> tuple[ChatResponse, float] | None:
         """
         Search for semantically similar cached response.
         Returns: (ChatResponse, similarity_score) if found, else None.
@@ -79,7 +79,7 @@ class SemanticCache:
         query_vec = simple_embedding(query_text)
         now = time.time()
 
-        best_match: Optional[SemanticCacheEntry] = None
+        best_match: SemanticCacheEntry | None = None
         best_score = -1.0
 
         for key, entry in list(self._entries.items()):

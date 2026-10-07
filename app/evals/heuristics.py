@@ -1,6 +1,7 @@
 import json
 import re
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -8,14 +9,14 @@ class EvalResult(BaseModel):
     check_name: str
     passed: bool
     score: float = Field(ge=0.0, le=1.0)
-    details: Optional[str] = None
+    details: str | None = None
 
 
 class ComprehensiveEvalReport(BaseModel):
     overall_score: float = Field(ge=0.0, le=1.0)
     passed: bool
-    evaluations: List[EvalResult] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    evaluations: list[EvalResult] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class HeuristicEvaluator:
@@ -29,7 +30,7 @@ class HeuristicEvaluator:
     """
     
     LEAK_PATTERNS = [
-        r"(my|the)\s+(system|internal)\s+(prompt|instructions)\s+(is|are)",
+        r"(my|the)\s+(?:(?:internal)\s+)?system\s+prompt\s+(is|are)",
         r"i\s+am\s+instructed\s+to",
         r"BEGIN\s+SYSTEM\s+PROMPT",
         r"ignore\s+all\s+previous\s+instructions",
@@ -40,16 +41,14 @@ class HeuristicEvaluator:
     ]
 
     @classmethod
-    def evaluate_json_validity(cls, text: str, required_keys: Optional[List[str]] = None) -> EvalResult:
+    def evaluate_json_validity(cls, text: str, required_keys: list[str] | None = None) -> EvalResult:
         """Validates if text contains valid JSON and contains required keys."""
         # Try finding JSON block ```json ... ``` or raw {...}
         cleaned = text.strip()
         json_match = re.search(r"```(?:json)?\s*(\{.*?\}|\[.*?\])\s*```", cleaned, re.DOTALL)
         if json_match:
             cleaned = json_match.group(1)
-        elif cleaned.startswith("{") and cleaned.endswith("}"):
-            pass
-        elif cleaned.startswith("[") and cleaned.endswith("]"):
+        elif cleaned.startswith("{") and cleaned.endswith("}") or cleaned.startswith("[") and cleaned.endswith("]"):
             pass
         else:
             # Search for any outermost JSON object
@@ -79,7 +78,7 @@ class HeuristicEvaluator:
                 check_name="json_validity",
                 passed=False,
                 score=0.0,
-                details=f"Invalid JSON: {str(e)}",
+                details=f"Invalid JSON: {e!s}",
             )
 
     @classmethod
@@ -130,7 +129,7 @@ class HeuristicEvaluator:
         )
 
     @classmethod
-    def evaluate_ground_truth_relevance(cls, text: str, ground_truth_keywords: List[str]) -> EvalResult:
+    def evaluate_ground_truth_relevance(cls, text: str, ground_truth_keywords: list[str]) -> EvalResult:
         """Checks how many required ground truth keywords or concepts are present."""
         if not ground_truth_keywords:
             return EvalResult(check_name="ground_truth_relevance", passed=True, score=1.0, details="No keywords specified")
@@ -152,13 +151,13 @@ class HeuristicEvaluator:
         cls,
         text: str,
         expect_json: bool = False,
-        required_json_keys: Optional[List[str]] = None,
-        ground_truth_keywords: Optional[List[str]] = None,
+        required_json_keys: list[str] | None = None,
+        ground_truth_keywords: list[str] | None = None,
         min_chars: int = 1,
         max_chars: int = 50000,
     ) -> ComprehensiveEvalReport:
         """Runs the full battery of heuristic checks and computes aggregate quality score."""
-        evals: List[EvalResult] = []
+        evals: list[EvalResult] = []
         
         # 1. Safety & Leaks
         evals.append(cls.evaluate_safety_and_leaks(text))

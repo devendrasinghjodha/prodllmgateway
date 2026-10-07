@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from typing import Optional, Tuple
+
 from pydantic import BaseModel
 
 
@@ -9,8 +9,11 @@ class AuthenticatedUser(BaseModel):
     api_key_id: str
     prefix: str
     is_admin: bool = False
-    team_id: Optional[str] = None
-    org_id: Optional[str] = None
+    team_id: str | None = None
+    org_id: str | None = None
+
+
+APIKey = AuthenticatedUser
 
 
 def hash_api_key(api_key: str) -> str:
@@ -18,7 +21,7 @@ def hash_api_key(api_key: str) -> str:
     return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
 
 
-def generate_api_key(prefix: str = "pllm_") -> Tuple[str, str, str]:
+def generate_api_key(prefix: str = "pllm_") -> tuple[str, str, str]:
     """
     Generate a new API key.
     Returns: (raw_key, key_hash, prefix)

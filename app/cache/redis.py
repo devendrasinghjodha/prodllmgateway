@@ -2,7 +2,7 @@ import hashlib
 import json
 import logging
 import time
-from typing import Any, Dict, Optional
+
 import redis.asyncio as redis
 
 from app.config import settings
@@ -10,11 +10,11 @@ from app.providers.base import ChatRequest, ChatResponse
 
 logger = logging.getLogger("prodllm.cache")
 
-redis_client: Optional[redis.Redis] = None
-_in_memory_cache: Dict[str, tuple[str, float]] = {}  # fallback: key -> (json_value, expire_at)
+redis_client: redis.Redis | None = None
+_in_memory_cache: dict[str, tuple[str, float]] = {}  # fallback: key -> (json_value, expire_at)
 
 
-async def get_redis() -> Optional[redis.Redis]:
+async def get_redis() -> redis.Redis | None:
     global redis_client
     if not settings.REDIS_ENABLED:
         return None
@@ -52,10 +52,10 @@ def generate_cache_key(request: ChatRequest) -> str:
 
 
 class CacheManager:
-    def __init__(self, r_client: Optional[redis.Redis] = None):
+    def __init__(self, r_client: redis.Redis | None = None):
         self.r = r_client
 
-    async def get_cached_response(self, cache_key: str) -> Optional[ChatResponse]:
+    async def get_cached_response(self, cache_key: str) -> ChatResponse | None:
         """Fetch and deserialize cached ChatResponse."""
         if self.r:
             try:
@@ -86,7 +86,7 @@ class CacheManager:
         self,
         cache_key: str,
         response: ChatResponse,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> None:
         """Store ChatResponse with TTL."""
         ttl = ttl_seconds or settings.CACHE_DEFAULT_TTL_SECONDS
@@ -103,7 +103,7 @@ class CacheManager:
         _in_memory_cache[cache_key] = (payload_json, time.time() + ttl)
 
     # Idempotency Helpers (Section 32)
-    async def get_idempotent_response(self, idempotency_key: str) -> Optional[ChatResponse]:
+    async def get_idempotent_response(self, idempotency_key: str) -> ChatResponse | None:
         key = f"idempotency:{idempotency_key}"
         return await self.get_cached_response(key)
 

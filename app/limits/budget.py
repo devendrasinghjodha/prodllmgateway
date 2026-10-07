@@ -1,13 +1,13 @@
 import datetime
 import logging
-from typing import Dict, Optional, Tuple
+
 import redis.asyncio as redis
 
 logger = logging.getLogger("prodllm.budget")
 
 # In-memory spend cache fallback: key -> total_spend_usd
-_in_memory_team_spend: Dict[str, float] = {}
-_team_budget_configs: Dict[str, Dict] = {}
+_in_memory_team_spend: dict[str, float] = {}
+_team_budget_configs: dict[str, dict] = {}
 
 
 class BudgetManager:
@@ -16,7 +16,7 @@ class BudgetManager:
     Enforces monthly USD spending limits with Graceful Free-Tier Downgrade or Strict Blocking.
     """
 
-    def __init__(self, r_client: Optional[redis.Redis] = None):
+    def __init__(self, r_client: redis.Redis | None = None):
         self.r = r_client
 
     def _get_month_key(self, team_id: str) -> str:
@@ -45,7 +45,7 @@ class BudgetManager:
                 logger.error(f"Redis get budget spend error: {e}")
         return _in_memory_team_spend.get(key, 0.0)
 
-    async def record_spend(self, team_id: Optional[str], cost_usd: float):
+    async def record_spend(self, team_id: str | None, cost_usd: float):
         if not team_id or cost_usd <= 0:
             return
         key = self._get_month_key(team_id)
@@ -62,8 +62,8 @@ class BudgetManager:
         _in_memory_team_spend[key] = _in_memory_team_spend.get(key, 0.0) + cost_usd
 
     async def check_budget(
-        self, team_id: Optional[str]
-    ) -> Tuple[bool, bool, float, float]:
+        self, team_id: str | None
+    ) -> tuple[bool, bool, float, float]:
         """
         Check if team is within monthly budget.
         Returns: (is_allowed, is_downgrade_needed, current_spend, monthly_budget)

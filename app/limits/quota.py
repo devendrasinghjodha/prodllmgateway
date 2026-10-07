@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Dict, Optional
+
 import redis.asyncio as redis
 
 from app.config import settings
@@ -8,7 +8,7 @@ from app.config import settings
 logger = logging.getLogger("prodllm.quota")
 
 # In-memory quota fallback: key -> tokens_used
-_in_memory_quota: Dict[str, int] = {}
+_in_memory_quota: dict[str, int] = {}
 
 
 class QuotaManager:
@@ -17,7 +17,7 @@ class QuotaManager:
     Keys formatted as: quota:user:{user_id}:{YYYY-MM-DD}
     """
 
-    def __init__(self, r_client: Optional[redis.Redis] = None):
+    def __init__(self, r_client: redis.Redis | None = None):
         self.r = r_client
 
     def _get_today_key(self, user_id: str) -> str:
@@ -52,7 +52,7 @@ class QuotaManager:
         return _in_memory_quota[key]
 
     async def check_quota(
-        self, user_id: str, max_daily_tokens: Optional[int] = None
+        self, user_id: str, max_daily_tokens: int | None = None
     ) -> tuple[bool, int, int]:
         """
         Check if user is within their daily token limit.

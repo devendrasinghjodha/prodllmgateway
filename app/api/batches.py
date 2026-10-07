@@ -1,29 +1,30 @@
 import asyncio
-from typing import Dict, Any, List, Optional
 import datetime
 import uuid
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Request
+from typing import Any
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from app.auth.middleware import get_authenticated_key
 from app.auth.api_keys import APIKey
-from app.queue.dlq import dlq_manager, DLQItem
+from app.auth.middleware import get_authenticated_key
+from app.providers.base import ChatMessage, ChatRequest
+from app.queue.dlq import DLQItem, dlq_manager
 from app.routing.router import router
-from app.providers.base import LLMRequest, ChatMessage
 
 batches_router = APIRouter(tags=["Batch Processing & DLQ"])
 
 
 class BatchRequestItem(BaseModel):
     custom_id: str
-    body: Dict[str, Any]
+    body: dict[str, Any]
 
 
 class CreateBatchRequest(BaseModel):
     endpoint: str = "/v1/chat/completions"
     completion_window: str = "24h"
-    requests: List[BatchRequestItem]
-    metadata: Dict[str, str] = Field(default_factory=dict)
+    requests: list[BatchRequestItem]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class BatchCounts(BaseModel):
@@ -38,17 +39,17 @@ class BatchJob(BaseModel):
     endpoint: str
     status: str  # 'validating', 'in_progress', 'completed', 'failed', 'cancelled'
     created_at: int
-    in_progress_at: Optional[int] = None
-    completed_at: Optional[int] = None
-    failed_at: Optional[int] = None
+    in_progress_at: int | None = None
+    completed_at: int | None = None
+    failed_at: int | None = None
     request_counts: BatchCounts = Field(default_factory=BatchCounts)
-    results: List[Dict[str, Any]] = Field(default_factory=list)
-    errors: List[Dict[str, Any]] = Field(default_factory=list)
-    metadata: Dict[str, str] = Field(default_factory=dict)
+    results: list[dict[str, Any]] = Field(default_factory=list)
+    errors: list[dict[str, Any]] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 # In-Memory Batch Jobs Store
-_BATCH_JOBS: Dict[str, BatchJob] = {}
+_BATCH_JOBS: dict[str, BatchJob] = {}
 
 
 async def _process_batch_job(batch_id: str):
@@ -63,25 +64,28 @@ async def _process_batch_job(batch_id: str):
     # Process each request with bounded concurrency
     sem = asyncio.Semaphore(5)
 
-    async def _process_single(item: Dict[str, Any]):
+    async def _process_single(item: dict[str, Any]):
         async with sem:
             if job.status == "cancelled":
                 return
             custom_id = item["custom_id"]
             body = item["body"]
             try:
-                # Convert body to LLMRequest
+                # Convert body to ChatRequest
                 messages = [
                     ChatMessage(role=m["role"], content=m["content"])
                     for m in body.get("messages", [])
                 ]
-                llm_req = LLMRequest(
+                llm_req = ChatRequest(
                     model=body.get("model", "auto"),
                     messages=messages,
                     temperature=body.get("temperature", 0.7),
                     max_tokens=body.get("max_tokens"),
                 )
-                response = await router.route(llm_req)
+                providers = router.route(llm_req)
+                if not providers:
+                    raise RuntimeError("No providers available for batch request")
+                response = await providers[0].chat(llm_req)
                 job.results.append({
                     "custom_id": custom_id,
                     "response": response.model_dump(),
@@ -144,7 +148,7 @@ async def get_batch(
     return job
 
 
-@batches_router.get("/v1/batches", response_model=List[BatchJob])
+@batches_router.get("/v1/batches", response_model=list[BatchJob])
 async def list_batches(
     limit: int = 20,
     api_key: APIKey = Depends(get_authenticated_key),
@@ -168,9 +172,9 @@ async def cancel_batch(
 
 
 # Dead Letter Queue Endpoints
-@batches_router.get("/v1/dlq", response_model=List[DLQItem])
+@batches_router.get("/v1/dlq", response_model=list[DLQItem])
 async def list_dlq_items(
-    status: Optional[str] = None,
+    status: str | None = None,
     limit: int = 50,
     api_key: APIKey = Depends(get_authenticated_key),
 ):
@@ -194,13 +198,16 @@ async def replay_dlq_item(
             ChatMessage(role=m["role"], content=m["content"])
             for m in body.get("messages", [])
         ]
-        llm_req = LLMRequest(
+        llm_req = ChatRequest(
             model=body.get("model", "auto"),
             messages=messages,
             temperature=body.get("temperature", 0.7),
             max_tokens=body.get("max_tokens"),
         )
-        response = await router.route(llm_req)
+        providers = router.route(llm_req)
+        if not providers:
+            raise RuntimeError("No providers available for replay")
+        response = await providers[0].chat(llm_req)
         dlq_manager.mark_replayed(item_id)
         return {
             "status": "success",
@@ -208,7 +215,7 @@ async def replay_dlq_item(
             "response": response.model_dump(),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Replay failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Replay failed: {e!s}")
 
 
 @batches_router.delete("/v1/dlq/{item_id}")

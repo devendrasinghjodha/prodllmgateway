@@ -1,3 +1,3 @@
-from app.prompts.registry import prompt_registry, PromptTemplate, PromptRegistry
+from app.prompts.registry import PromptRegistry, PromptTemplate, prompt_registry
 
-__all__ = ["prompt_registry", "PromptTemplate", "PromptRegistry"]
+__all__ = ["PromptRegistry", "PromptTemplate", "prompt_registry"]

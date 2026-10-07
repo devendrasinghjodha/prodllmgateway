@@ -1,6 +1,6 @@
-import re
 import logging
-from typing import Dict, List, Tuple
+import re
+
 from app.providers.base import ChatMessage
 
 logger = logging.getLogger("prodllm.pii")
@@ -23,7 +23,7 @@ class PIIMasker:
     def __init__(self):
         self._compiled = {k: re.compile(v) for k, v in self.PATTERNS.items()}
 
-    def mask_text(self, text: str, mapping: Dict[str, str]) -> str:
+    def mask_text(self, text: str, mapping: dict[str, str]) -> str:
         masked_text = text
         for pii_type, regex in self._compiled.items():
             matches = list(regex.finditer(masked_text))
@@ -43,12 +43,12 @@ class PIIMasker:
                 masked_text = masked_text[:start] + placeholder + masked_text[end:]
         return masked_text
 
-    def mask_messages(self, messages: List[ChatMessage]) -> Tuple[List[ChatMessage], Dict[str, str]]:
-        mapping: Dict[str, str] = {}
+    def mask_messages(self, messages: list[ChatMessage]) -> tuple[list[ChatMessage], dict[str, str]]:
+        mapping: dict[str, str] = {}
         masked_messages = []
 
         for msg in messages:
-            masked_content = self.mask_text(msg.content, mapping)
+            masked_content = self.mask_text(msg.content or "", mapping)
             masked_messages.append(
                 ChatMessage(
                     role=msg.role,
@@ -62,7 +62,7 @@ class PIIMasker:
 
         return masked_messages, mapping
 
-    def unmask_text(self, text: str, mapping: Dict[str, str]) -> str:
+    def unmask_text(self, text: str, mapping: dict[str, str]) -> str:
         if not mapping or not text:
             return text
         unmasked = text

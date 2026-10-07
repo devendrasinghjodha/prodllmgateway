@@ -1,19 +1,19 @@
 import logging
-from typing import Optional
-from fastapi import Request, HTTPException, Security, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from fastapi import Depends, HTTPException, Security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.api_keys import AuthenticatedUser, hash_api_key
 from app.config import settings
-from app.auth.api_keys import hash_api_key, AuthenticatedUser
-from app.database.repository import get_db_session, DatabaseRepository
+from app.database.repository import DatabaseRepository, get_db_session
 
 logger = logging.getLogger("prodllm.auth")
 security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    credentials: HTTPAuthorizationCredentials | None = Security(security),
     db: AsyncSession = Depends(get_db_session),
 ) -> AuthenticatedUser:
     """
@@ -71,3 +71,6 @@ async def get_current_user(
         prefix=api_key_record.prefix,
         is_admin=False,
     )
+
+
+get_authenticated_key = get_current_user

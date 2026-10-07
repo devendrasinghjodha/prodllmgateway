@@ -1,20 +1,19 @@
 import logging
-from typing import Dict, List, Optional
 
 from app.config import settings
-from app.providers.base import LLMProvider, ChatRequest, ProviderHealth
-from app.providers.gemini import GeminiProvider
-from app.providers.openrouter import OpenRouterProvider
 from app.providers.agnes import AgnesProvider
+from app.providers.base import ChatRequest, LLMProvider, ProviderHealth
+from app.providers.gemini import GeminiProvider
 from app.providers.mock import MockProvider
+from app.providers.openrouter import OpenRouterProvider
 from app.routing.policies import (
-    RoutingPolicy,
-    RuleBasedPolicy,
-    LatencyBasedPolicy,
-    CostOptimizedPolicy,
     ABTestPolicy,
     CanaryPolicy,
     CompositeScoringPolicy,
+    CostOptimizedPolicy,
+    LatencyBasedPolicy,
+    RoutingPolicy,
+    RuleBasedPolicy,
 )
 from app.routing.scoring import scorer
 
@@ -28,8 +27,8 @@ class ModelRouter:
     """
 
     def __init__(self):
-        self._providers: Dict[str, LLMProvider] = {}
-        self._policies: Dict[str, RoutingPolicy] = {
+        self._providers: dict[str, LLMProvider] = {}
+        self._policies: dict[str, RoutingPolicy] = {
             "rule": RuleBasedPolicy(),
             "auto": RuleBasedPolicy(),
             "latency": LatencyBasedPolicy(),
@@ -50,18 +49,18 @@ class ModelRouter:
         self._providers[provider.name.lower()] = provider
         logger.info(f"Registered provider: {provider.name}")
 
-    def get_provider(self, name: str) -> Optional[LLMProvider]:
+    def get_provider(self, name: str) -> LLMProvider | None:
         return self._providers.get(name.lower())
 
-    def get_all_providers(self) -> List[LLMProvider]:
+    def get_all_providers(self) -> list[LLMProvider]:
         return list(self._providers.values())
 
     def route(
         self,
         request: ChatRequest,
-        strategy: Optional[str] = None,
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        strategy: str | None = None,
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         """
         Route request to an ordered list of providers based on strategy.
         """
@@ -75,7 +74,7 @@ class ModelRouter:
             user_id=user_id,
         )
 
-    async def check_all_health(self) -> Dict[str, ProviderHealth]:
+    async def check_all_health(self) -> dict[str, ProviderHealth]:
         """Run health check against all registered providers."""
         results = {}
         for name, provider in self._providers.items():

@@ -1,21 +1,22 @@
-from typing import Dict, Any, List, Optional
 import datetime
 import uuid
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
 class DLQItem(BaseModel):
     id: str = Field(default_factory=lambda: f"dlq_{uuid.uuid4().hex[:12]}")
-    original_request_id: Optional[str] = None
-    team_id: Optional[str] = None
+    original_request_id: str | None = None
+    team_id: str | None = None
     endpoint: str = "/v1/chat/completions"
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     error_message: str
     error_type: str
     attempts: int = 1
     status: str = "failed"  # 'failed', 'replayed', 'dismissed'
     created_at: str = Field(default_factory=lambda: datetime.datetime.utcnow().isoformat())
-    last_attempted_at: Optional[str] = None
+    last_attempted_at: str | None = None
 
 
 class DeadLetterQueue:
@@ -24,15 +25,15 @@ class DeadLetterQueue:
     Allows auditing, debugging, and offline manual or automated replay.
     """
     def __init__(self):
-        self._queue: Dict[str, DLQItem] = {}
+        self._queue: dict[str, DLQItem] = {}
 
     def push(
         self,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         error_message: str,
         error_type: str = "ProviderError",
-        original_request_id: Optional[str] = None,
-        team_id: Optional[str] = None,
+        original_request_id: str | None = None,
+        team_id: str | None = None,
         endpoint: str = "/v1/chat/completions",
     ) -> DLQItem:
         item = DLQItem(
@@ -46,13 +47,13 @@ class DeadLetterQueue:
         self._queue[item.id] = item
         return item
 
-    def list_items(self, status: Optional[str] = None, limit: int = 50) -> List[DLQItem]:
+    def list_items(self, status: str | None = None, limit: int = 50) -> list[DLQItem]:
         items = list(self._queue.values())
         if status:
             items = [i for i in items if i.status == status]
         return sorted(items, key=lambda x: x.created_at, reverse=True)[:limit]
 
-    def get_item(self, item_id: str) -> Optional[DLQItem]:
+    def get_item(self, item_id: str) -> DLQItem | None:
         return self._queue.get(item_id)
 
     def mark_replayed(self, item_id: str):

@@ -1,4 +1,3 @@
-from typing import List, Union
 from app.providers.base import ChatMessage
 
 try:
@@ -23,7 +22,7 @@ def count_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
-def count_messages_tokens(messages: List[ChatMessage]) -> int:
+def count_messages_tokens(messages: list[ChatMessage]) -> int:
     """
     Calculate prompt token count from a list of ChatMessage objects according to OpenAI formatting rules.
     """

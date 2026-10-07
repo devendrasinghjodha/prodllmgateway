@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List, Optional
+
 from app.config import settings
 from app.providers.base import ChatRequest, ChatResponse, LLMProvider
 from app.reliability.circuit_breaker import circuit_breakers
@@ -17,9 +17,9 @@ class HedgingOrchestrator:
 
     async def execute(
         self,
-        providers: List[LLMProvider],
+        providers: list[LLMProvider],
         request: ChatRequest,
-        delay_ms: Optional[int] = None,
+        delay_ms: int | None = None,
     ) -> ChatResponse:
         if len(providers) < 2 or not settings.HEDGING_ENABLED:
             # Fallback to single primary if hedging disabled or only 1 provider

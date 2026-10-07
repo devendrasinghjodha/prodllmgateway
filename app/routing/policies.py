@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
 import hashlib
 import random
-from typing import List, Optional
+from abc import ABC, abstractmethod
+
 from app.config import settings
-from app.providers.base import LLMProvider, ChatRequest
+from app.providers.base import ChatRequest, LLMProvider
 from app.routing.scoring import scorer
 
 
@@ -12,20 +12,19 @@ class RoutingPolicy(ABC):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         """Return an ordered list of providers (primary followed by fallback candidates)."""
-        pass
 
 
 class RuleBasedPolicy(RoutingPolicy):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         model = (request.model or "auto").lower()
         provider_map = {p.name.lower(): p for p in available_providers}
 
@@ -58,9 +57,9 @@ class LatencyBasedPolicy(RoutingPolicy):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         # Sort by lowest average latency
         return sorted(available_providers, key=lambda p: scorer.get_avg_latency(p.name))
 
@@ -69,9 +68,9 @@ class CostOptimizedPolicy(RoutingPolicy):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         # Free / cheapest first (openrouter free / agnes -> gemini)
         return sorted(available_providers, key=lambda p: scorer.cost_ratings.get(p.name, 0.5))
 
@@ -86,9 +85,9 @@ class ABTestPolicy(RoutingPolicy):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         uid = user_id or request.user or "anon_user"
         bucket = int(hashlib.md5(uid.encode("utf-8")).hexdigest(), 16) % 100
 
@@ -113,9 +112,9 @@ class CanaryPolicy(RoutingPolicy):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         provider_map = {p.name.lower(): p for p in available_providers}
         canary_target = settings.CANARY_TARGET_MODEL.lower()
         canary_weight = settings.CANARY_WEIGHT
@@ -138,7 +137,7 @@ class CompositeScoringPolicy(RoutingPolicy):
     def select_providers(
         self,
         request: ChatRequest,
-        available_providers: List[LLMProvider],
-        user_id: Optional[str] = None,
-    ) -> List[LLMProvider]:
+        available_providers: list[LLMProvider],
+        user_id: str | None = None,
+    ) -> list[LLMProvider]:
         return sorted(available_providers, key=lambda p: scorer.compute_score(p.name))

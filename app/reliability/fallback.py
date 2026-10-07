@@ -1,5 +1,6 @@
 import logging
-from typing import AsyncGenerator, Callable, Dict, List, Optional
+from collections.abc import AsyncGenerator, Callable
+
 from app.providers.base import (
     ChatRequest,
     ChatResponse,
@@ -7,7 +8,6 @@ from app.providers.base import (
     LLMProvider,
 )
 from app.reliability.circuit_breaker import (
-    CircuitBreakerOpenError,
     circuit_breakers,
 )
 from app.reliability.retry import with_retry
@@ -30,9 +30,9 @@ class FallbackOrchestrator:
 
     async def execute_chat(
         self,
-        providers: List[LLMProvider],
+        providers: list[LLMProvider],
         request: ChatRequest,
-        on_provider_fallback: Optional[Callable] = None,
+        on_provider_fallback: Callable | None = None,
     ) -> ChatResponse:
         errors = {}
         for index, provider in enumerate(providers):
@@ -64,7 +64,7 @@ class FallbackOrchestrator:
 
     async def execute_stream(
         self,
-        providers: List[LLMProvider],
+        providers: list[LLMProvider],
         request: ChatRequest,
     ) -> AsyncGenerator[ChatStreamChunk, None]:
         errors = {}

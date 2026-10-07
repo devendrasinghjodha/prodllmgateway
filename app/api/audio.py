@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import BaseModel
-from typing import Optional
 
 from app.auth.api_keys import AuthenticatedUser
 from app.auth.middleware import get_current_user
@@ -16,7 +16,7 @@ class TranscriptionResponse(BaseModel):
 async def create_transcription(
     file: UploadFile = File(...),
     model: str = Form("whisper-1"),
-    language: Optional[str] = Form(None),
+    language: str | None = Form(None),
     user: AuthenticatedUser = Depends(get_current_user),
 ):
     """

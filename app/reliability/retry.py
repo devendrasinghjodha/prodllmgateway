@@ -1,7 +1,9 @@
 import asyncio
 import logging
 import random
-from typing import Callable, Awaitable, List, Optional, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
+
 import httpx
 
 from app.config import settings
@@ -12,10 +14,9 @@ T = TypeVar("T")
 
 class RetryError(Exception):
     """Raised when all retry attempts are exhausted."""
-    pass
 
 
-def is_retriable_exception(exc: Exception, status_codes: List[int]) -> bool:
+def is_retriable_exception(exc: Exception, status_codes: list[int]) -> bool:
     """
     Determine if an exception or HTTP status code is transient/retriable.
     Retries: 429, 500, 502, 503, 504, timeouts, connection drops.
@@ -32,11 +33,11 @@ def is_retriable_exception(exc: Exception, status_codes: List[int]) -> bool:
 
 async def with_retry(
     fn: Callable[[], Awaitable[T]],
-    max_attempts: Optional[int] = None,
-    initial_delay: Optional[float] = None,
-    backoff_factor: Optional[float] = None,
-    retriable_status_codes: Optional[List[int]] = None,
-    on_retry: Optional[Callable[[int, Exception, float], None]] = None,
+    max_attempts: int | None = None,
+    initial_delay: float | None = None,
+    backoff_factor: float | None = None,
+    retriable_status_codes: list[int] | None = None,
+    on_retry: Callable[[int, Exception, float], None] | None = None,
 ) -> T:
     """
     Execute async function with exponential backoff and full jitter.
@@ -46,7 +47,7 @@ async def with_retry(
     factor = backoff_factor or settings.RETRY_BACKOFF_FACTOR
     status_codes = retriable_status_codes or settings.RETRY_STATUS_CODES
 
-    last_exception: Optional[Exception] = None
+    last_exception: Exception | None = None
 
     for attempt in range(1, attempts + 1):
         try:

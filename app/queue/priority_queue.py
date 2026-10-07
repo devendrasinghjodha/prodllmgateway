@@ -1,8 +1,9 @@
 import asyncio
-from dataclasses import dataclass, field
 import logging
 import time
-from typing import Any, Callable, Awaitable, Optional, TypeVar
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from typing import Any, TypeVar
 
 from app.config import settings
 
@@ -12,7 +13,6 @@ T = TypeVar("T")
 
 class BackpressureQueueFullError(Exception):
     """Raised when the priority queue reaches max capacity."""
-    pass
 
 
 @dataclass(order=True)
@@ -39,8 +39,8 @@ class PriorityScheduler:
 
     def __init__(
         self,
-        max_concurrency: Optional[int] = None,
-        max_queue_size: Optional[int] = None,
+        max_concurrency: int | None = None,
+        max_queue_size: int | None = None,
     ):
         self.max_concurrency = max_concurrency or settings.MAX_CONCURRENT_REQUESTS
         self.max_queue_size = max_queue_size or settings.PRIORITY_QUEUE_CAPACITY

@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, List, Optional
 
 logger = logging.getLogger("prodllm.key_rotation")
 
@@ -11,17 +10,17 @@ class KeyRotator:
     """
 
     def __init__(self):
-        self._provider_keys: Dict[str, List[str]] = {}
-        self._current_index: Dict[str, int] = {}
+        self._provider_keys: dict[str, list[str]] = {}
+        self._current_index: dict[str, int] = {}
 
-    def register_keys(self, provider: str, keys: List[str]):
+    def register_keys(self, provider: str, keys: list[str]):
         cleaned_keys = [k.strip() for k in keys if k and k.strip()]
         if cleaned_keys:
             self._provider_keys[provider.lower()] = cleaned_keys
             self._current_index[provider.lower()] = 0
             logger.info(f"Registered {len(cleaned_keys)} API keys for provider '{provider}'.")
 
-    def get_key(self, provider: str) -> Optional[str]:
+    def get_key(self, provider: str) -> str | None:
         p = provider.lower()
         keys = self._provider_keys.get(p, [])
         if not keys:

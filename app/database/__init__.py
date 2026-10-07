@@ -1,16 +1,16 @@
-from app.database.models import Base, User, APIKey, RequestLog
+from app.database.models import APIKey, Base, RequestLog, User
 from app.database.repository import (
-    init_db,
-    get_db_session,
     DatabaseRepository,
+    get_db_session,
+    init_db,
 )
 
 __all__ = [
-    "Base",
-    "User",
     "APIKey",
-    "RequestLog",
-    "init_db",
-    "get_db_session",
+    "Base",
     "DatabaseRepository",
+    "RequestLog",
+    "User",
+    "get_db_session",
+    "init_db",
 ]

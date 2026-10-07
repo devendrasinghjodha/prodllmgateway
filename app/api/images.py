@@ -1,6 +1,6 @@
 import time
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.auth.api_keys import AuthenticatedUser
@@ -11,21 +11,21 @@ images_router = APIRouter(prefix="/v1", tags=["Images"])
 
 class ImageGenerationRequest(BaseModel):
     prompt: str
-    model: Optional[str] = "dall-e-3"
-    n: Optional[int] = 1
-    size: Optional[str] = "1024x1024"
-    response_format: Optional[str] = "url"
+    model: str | None = "dall-e-3"
+    n: int | None = 1
+    size: str | None = "1024x1024"
+    response_format: str | None = "url"
 
 
 class ImageData(BaseModel):
-    url: Optional[str] = None
-    b64_json: Optional[str] = None
-    revised_prompt: Optional[str] = None
+    url: str | None = None
+    b64_json: str | None = None
+    revised_prompt: str | None = None
 
 
 class ImageResponse(BaseModel):
     created: int = int(time.time())
-    data: List[ImageData]
+    data: list[ImageData]
 
 
 @images_router.post("/images/generations", response_model=ImageResponse)

@@ -1,17 +1,17 @@
-from datetime import datetime, timedelta
 import logging
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, update
+from datetime import datetime, timedelta
 
-from app.auth.api_keys import generate_api_key, hash_api_key, AuthenticatedUser
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import desc, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth.api_keys import AuthenticatedUser, generate_api_key
 from app.auth.middleware import get_current_user
-from app.database.models import User, APIKey, RequestLog, Team, Organization
-from app.database.repository import get_db_session, DatabaseRepository
+from app.database.models import APIKey, RequestLog, Team
+from app.database.repository import DatabaseRepository, get_db_session
 from app.limits.budget import budget_manager
-from app.reliability.circuit_breaker import circuit_breakers, CircuitState
+from app.reliability.circuit_breaker import CircuitState, circuit_breakers
 
 logger = logging.getLogger("prodllm.api.admin")
 admin_router = APIRouter(prefix="/admin", tags=["Admin Operations"])
@@ -19,9 +19,9 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 
 class CreateKeyRequest(BaseModel):
     user_id: str
-    user_name: Optional[str] = "Developer"
-    team_id: Optional[str] = None
-    expires_in_days: Optional[int] = 30
+    user_name: str | None = "Developer"
+    team_id: str | None = None
+    expires_in_days: int | None = 30
 
 
 class CreateKeyResponse(BaseModel):
@@ -30,7 +30,7 @@ class CreateKeyResponse(BaseModel):
     prefix: str
     user_id: str
     created_at: datetime
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
 
 
 class KeyInfo(BaseModel):
@@ -39,7 +39,7 @@ class KeyInfo(BaseModel):
     prefix: str
     status: str
     created_at: datetime
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
 
 
 class CreateTeamRequest(BaseModel):
@@ -47,13 +47,13 @@ class CreateTeamRequest(BaseModel):
     name: str
     monthly_budget_usd: float = 100.0
     budget_policy: str = "downgrade_to_free"  # downgrade_to_free, strict_block
-    org_id: Optional[str] = None
+    org_id: str | None = None
 
 
 class TeamInfo(BaseModel):
     id: str
     name: str
-    org_id: Optional[str]
+    org_id: str | None
     monthly_budget_usd: float
     budget_policy: str
     current_month_spend_usd: float
@@ -62,8 +62,8 @@ class TeamInfo(BaseModel):
 
 class RequestLogItem(BaseModel):
     id: str
-    user_id: Optional[str]
-    team_id: Optional[str]
+    user_id: str | None
+    team_id: str | None
     provider: str
     model: str
     prompt_tokens: int
@@ -117,7 +117,7 @@ async def create_team(
     )
 
 
-@admin_router.get("/teams", response_model=List[TeamInfo])
+@admin_router.get("/teams", response_model=list[TeamInfo])
 async def list_teams(
     admin: AuthenticatedUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db_session),
@@ -182,7 +182,7 @@ async def create_key(
     )
 
 
-@admin_router.get("/keys", response_model=List[KeyInfo])
+@admin_router.get("/keys", response_model=list[KeyInfo])
 async def list_keys(
     admin: AuthenticatedUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db_session),
@@ -217,11 +217,11 @@ async def revoke_key(
     return {"status": "success", "message": f"API key {key_id} revoked"}
 
 
-@admin_router.get("/requests", response_model=List[RequestLogItem])
+@admin_router.get("/requests", response_model=list[RequestLogItem])
 async def get_requests(
-    provider: Optional[str] = None,
-    status: Optional[str] = None,
-    team_id: Optional[str] = None,
+    provider: str | None = None,
+    status: str | None = None,
+    team_id: str | None = None,
     limit: int = Query(50, le=200),
     offset: int = 0,
     admin: AuthenticatedUser = Depends(require_admin),

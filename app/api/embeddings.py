@@ -1,28 +1,25 @@
-import time
-from typing import List, Union, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-import httpx
 
-from app.config import settings
 from app.auth.api_keys import AuthenticatedUser
 from app.auth.middleware import get_current_user
-from app.utils.http_client import get_http_client
 from app.cache.semantic import simple_embedding
+from app.config import settings
+from app.utils.http_client import get_http_client
 
 embeddings_router = APIRouter(prefix="/v1", tags=["Embeddings"])
 
 
 class EmbeddingRequest(BaseModel):
-    input: Union[str, List[str]]
+    input: str | list[str]
     model: str = "text-embedding-3-small"
-    user: Optional[str] = None
+    user: str | None = None
 
 
 class EmbeddingData(BaseModel):
     object: str = "embedding"
     index: int
-    embedding: List[float]
+    embedding: list[float]
 
 
 class EmbeddingUsage(BaseModel):
@@ -32,7 +29,7 @@ class EmbeddingUsage(BaseModel):
 
 class EmbeddingResponse(BaseModel):
     object: str = "list"
-    data: List[EmbeddingData]
+    data: list[EmbeddingData]
     model: str
     usage: EmbeddingUsage
 

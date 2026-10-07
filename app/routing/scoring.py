@@ -1,11 +1,10 @@
 import time
-from typing import Dict, Optional
 
 
 class ProviderStats:
     def __init__(self, provider_name: str):
         self.provider_name = provider_name
-        self.samples = []
+        self.samples: list[float] = []
         self.max_samples = 50
         self.avg_latency_ms: float = 1000.0  # default prior
         self.last_updated = time.time()
@@ -26,21 +25,21 @@ class ProviderScorer:
     """
 
     def __init__(self):
-        self._stats: Dict[str, ProviderStats] = {
+        self._stats: dict[str, ProviderStats] = {
             "gemini": ProviderStats("gemini"),
             "openrouter": ProviderStats("openrouter"),
             "agnes": ProviderStats("agnes"),
             "mock": ProviderStats("mock"),
         }
         # Virtual quality ratings (0.0 to 1.0)
-        self.quality_ratings: Dict[str, float] = {
+        self.quality_ratings: dict[str, float] = {
             "gemini": 0.95,
             "openrouter": 0.90,
             "agnes": 0.92,
             "mock": 0.99,
         }
         # Normalized virtual cost ranking (0.0=free/cheapest, 1.0=expensive)
-        self.cost_ratings: Dict[str, float] = {
+        self.cost_ratings: dict[str, float] = {
             "gemini": 0.3,
             "openrouter": 0.0,
             "agnes": 0.15,

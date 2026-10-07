@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, List, Optional
+
 import redis.asyncio as redis
 
 from app.config import settings
@@ -8,7 +8,7 @@ from app.config import settings
 logger = logging.getLogger("prodllm.ratelimit")
 
 # In-memory sliding window fallback: key -> list of timestamps
-_in_memory_ratelimit: Dict[str, List[float]] = {}
+_in_memory_ratelimit: dict[str, list[float]] = {}
 
 
 class RateLimiter:
@@ -19,7 +19,7 @@ class RateLimiter:
     3. In-Memory Sliding Window fallback
     """
 
-    def __init__(self, r_client: Optional[redis.Redis] = None):
+    def __init__(self, r_client: redis.Redis | None = None):
         self.r = r_client
 
     async def check_sliding_window(
@@ -101,8 +101,8 @@ class RateLimiter:
     async def is_rate_limited(
         self,
         identifier: str,
-        max_requests: Optional[int] = None,
-        window_seconds: Optional[int] = None,
+        max_requests: int | None = None,
+        window_seconds: int | None = None,
     ) -> bool:
         max_req = max_requests or settings.RATE_LIMIT_REQUESTS_PER_MINUTE
         win_sec = window_seconds or settings.RATE_LIMIT_WINDOW_SECONDS

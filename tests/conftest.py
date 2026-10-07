@@ -4,11 +4,11 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 
 # Set test environment
-os.environ["APP_ENV"] = "test"
-os.environ["REQUIRE_AUTH"] = "false"
-os.environ["REDIS_ENABLED"] = "false"
-os.environ["USE_SQLITE_FALLBACK"] = "true"
-os.environ["FALLBACK_SQLITE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("REQUIRE_AUTH", "false")
+os.environ.setdefault("REDIS_ENABLED", "false")
+os.environ.setdefault("USE_SQLITE_FALLBACK", "true")
+os.environ.setdefault("FALLBACK_SQLITE_URL", "sqlite+aiosqlite:///./prodllm-test.db")
 
 from app.main import app
 from app.config import settings
